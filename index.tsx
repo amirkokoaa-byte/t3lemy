@@ -105,7 +105,14 @@ const App = () => {
   // تسجيل دخول الأدمن (حسب طلبك: اسم مستخدم وباسورد محددين)
   const handleAdminLogin = (u: string, p: string) => {
     onValue(ref(db, 'adminSettings'), (snap) => {
-      const settings = snap.val() || { user: 'admin', pass: 'admin' };
+      const val = snap.val() || {};
+      // نتأكد من وجود قيم افتراضية في حالة عدم وجود البيانات في قاعدة البيانات
+      // أو في حالة وجود الباسورد فقط (إذا تم تغييره سابقاً)
+      const settings = { 
+        user: val.user || 'admin', 
+        pass: val.pass || 'admin' 
+      };
+      
       if (u === settings.user && p === settings.pass) {
         setIsAdmin(true);
         setCurrentView('admin');
@@ -786,9 +793,14 @@ const AdminLoginForm = ({ onLogin }) => {
     const [u, setU] = useState('');
     const [p, setP] = useState('');
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onLogin(u, p);
+    };
+
     return (
         <div className="flex justify-center items-center h-full min-h-[50vh]">
-            <div className="glass p-8 rounded-2xl w-full max-w-md flex flex-col gap-5 animate-scale-up border-2 border-red-500/30 shadow-2xl bg-gradient-to-b from-red-900/10 to-transparent">
+            <form onSubmit={handleSubmit} className="glass p-8 rounded-2xl w-full max-w-md flex flex-col gap-5 animate-scale-up border-2 border-red-500/30 shadow-2xl bg-gradient-to-b from-red-900/10 to-transparent">
                 <div className="text-center">
                      <div className="bg-red-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
                         <Lock size={32} />
@@ -800,10 +812,10 @@ const AdminLoginForm = ({ onLogin }) => {
                 <input placeholder="اسم المستخدم" value={u} onChange={e=>setU(e.target.value)} className="p-4 rounded-xl" dir="ltr"/>
                 <input type="password" placeholder="كلمة المرور" value={p} onChange={e=>setP(e.target.value)} className="p-4 rounded-xl" dir="ltr"/>
                 
-                <button onClick={() => onLogin(u, p)} className="bg-red-600 text-white p-4 rounded-xl font-bold hover:bg-red-700 transition shadow-lg mt-2">
+                <button type="submit" className="bg-red-600 text-white p-4 rounded-xl font-bold hover:bg-red-700 transition shadow-lg mt-2">
                     دخول
                 </button>
-            </div>
+            </form>
         </div>
     );
 };
