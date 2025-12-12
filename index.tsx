@@ -30,7 +30,11 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 
 // --- تهيئة Gemini AI ---
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const apiKey = process.env.API_KEY || '';
+if (!apiKey) {
+  console.warn("تنبيه: لم يتم العثور على API_KEY في متغيرات البيئة. قد لا تعمل ميزات الذكاء الاصطناعي.");
+}
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 // --- مكون الساعة والتاريخ ---
 const Clock = () => {
@@ -343,11 +347,15 @@ const UserView = ({ content, onExplain, setLoadingAI, loadingAI }) => {
             }
         });
         
-        const text = (await response).text;
-        onExplain(text);
-    } catch (e) {
-        console.error(e);
-        alert("حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً.");
+        const text = response.text;
+        if (text) {
+          onExplain(text);
+        } else {
+          throw new Error("لم يتم استلام رد من النموذج");
+        }
+    } catch (e: any) {
+        console.error("AI Error:", e);
+        alert(`حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ${e.message || "خطأ غير معروف"}`);
     } finally {
         setLoadingAI(false);
     }
@@ -361,8 +369,14 @@ const UserView = ({ content, onExplain, setLoadingAI, loadingAI }) => {
              model: 'gemini-2.5-flash',
              contents: prompt,
         });
-        onExplain(`<h2>شرح مستخرج من: ${label}</h2>` + (await response).text);
+        const text = response.text;
+        if (text) {
+             onExplain(`<h2>شرح مستخرج من: ${label}</h2>` + text);
+        } else {
+             throw new Error("Empty response");
+        }
     } catch(e) {
+        console.error(e);
         handleAIExplain('general');
     } finally {
         setLoadingAI(false);
